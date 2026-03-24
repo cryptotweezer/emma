@@ -125,8 +125,8 @@ Tener todo el stack funcionando antes de escribir código de trading.
 - [ ] OpenRouter: cuenta → API key gratis (fallback)
 
 ### Setup técnico en la VM
-- [ ] pip install simmer-sdk en el servidor
-- [ ] Crear .env en el servidor con todas las API keys
+- [x] pip install simmer-sdk en el servidor
+- [x] Crear .env en el servidor con todas las API keys
 - [ ] Instalar Manifold MCP Server en Claude Code local
 - [ ] Conectar wallet EOA a Simmer dashboard
 - [ ] Primer trade manual en Simmer venue=sim para verificar conexión
@@ -187,14 +187,19 @@ Si eso ocurre: contactar soporte y pedir IP nueva — es raro pero documentado.
 - [x] Configurar Groq API key en OpenClaw — inyectada
 - [x] Conectar OpenClaw con Telegram para recibir alertas — @emma_openclawbot
 - [x] Registrar agente en Simmer y guardar SIMMER_API_KEY — $10K SIM listo
-- [ ] pip install simmer-sdk en el servidor
-- [ ] Crear .env en el servidor con todas las API keys
+- [x] pip install simmer-sdk en el servidor
+- [x] Crear /root/.env en el servidor con 13 variables principales
+- [x] Alchemy cuenta creada — Polygon mainnet node activo
+- [x] PolyClaw de Chainstack instalado y funcionando
+- [x] uv instalado para ejecutar PolyClaw
+- [x] Simmer API health check (API funcionando ok)
+- [x] Primer trade de prueba en Simmer venue=sim ✅ EJECUTADO
+- [ ] Instalar Binance MCP server en Emma
+- [ ] Escribir bot.py base con asyncio + señales Metaculus/Manifold
+- [ ] Configurar lógica de edge detection (edge ≥ 8%)
+- [ ] Conectar señales con Simmer para trades automáticos
 - [ ] USER.md con información de Andres
-- [ ] Script: consultar Metaculus API → probabilidades de mercados abiertos
-- [ ] Script: consultar Manifold API → probabilidades de los mismos mercados
-- [ ] Script: calcular edge = promedio(Metaculus, Manifold) - precio_Polymarket
 - [ ] Script NOAA forecast vs weather brackets en Simmer
-- [ ] Conectar señales con Simmer SDK → ejecutar en venue=sim automáticamente
 - [ ] Incluir reasoning en cada trade (requerido por Simmer)
 - [ ] OpenClaw corre el bot 24/7, alertas por Telegram
 

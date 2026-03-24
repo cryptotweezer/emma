@@ -28,6 +28,10 @@ Capital inicial: $1,000 USD. Objetivo: máxima rentabilidad.
 - Acceso shell servidor: ssh openclaw-shell
 - Memoria semántica: Gemini text-embedding-001 (gratis, 1000 req/day)
 - Emma: @emma_openclawbot en Telegram
+- PolyClaw: ~/.openclaw/skills/polyclaw (Chainstack, verificado)
+- Alchemy: Polygon mainnet node activo
+- Simmer SDK: instalado y primer trade ejecutado en venue=sim
+- .env servidor: 13 variables configuradas en /root/.env
 
 ## Decisiones de arquitectura (no cambiar sin documentar)
 - Fees: mercados política/eventos = CERO fees → estrategia Fase 1
@@ -62,9 +66,9 @@ Capital inicial: $1,000 USD. Objetivo: máxima rentabilidad.
 
 ## ESTADO ACTUAL
 
-**Sprint:** 0 — Setup inicial
+**Sprint:** 1 — Paper trading 24/7 en VM
 **Fecha última actualización:** 2026-03-24
-**Estado general:** VM activa — OpenClaw 24/7 — Emma con identidad + memoria semántica Gemini operativa — SSH con alias y clave ed25519 — pendiente USER.md + simmer-sdk + primer trade Simmer
+**Estado general:** VM activa — OpenClaw 24/7 — Emma con identidad + memoria semántica Gemini operativa — SSH con alias y clave ed25519 — simmer-sdk y PolyClaw instalados en el servidor, pendientes de test por Simmer API 502
 
 ### Completado
 - [x] Estructura del proyecto creada (2026-03-20)
@@ -104,27 +108,28 @@ Capital inicial: $1,000 USD. Objetivo: máxima rentabilidad.
 - [x] Memoria semántica configurada: provider=gemini, model=gemini-embedding-001 (2026-03-24)
 - [x] Directorio ~/.openclaw/workspace/memory/ creado (2026-03-24)
 - [x] GEMINI_API_KEY agregada al openclaw.json env section (2026-03-24)
-- [x] Modelo OpenClaw: openrouter/auto (free tier) (2026-03-24) (2026-03-23)
+- [x] Modelo OpenClaw: openrouter/auto (free tier) (2026-03-24)
+- [x] pip install simmer-sdk instalado en el servidor (2026-03-24)
+- [x] /root/.env creado con 13 variables (SIMMER, POLYMARKET, GROQ, OPENROUTER, NVIDIA, GEMINI, METACULUS, MANIFOLD, CONTABO, ALCHEMY_API_KEY, ALCHEMY_NODE, CHAINSTACK_NODE, POLYCLAW_PRIVATE_KEY) (2026-03-24)
+- [x] Alchemy cuenta creada — Polygon mainnet node activo (gratis, 30M CU/mes) (2026-03-24)
+- [x] PolyClaw de Chainstack instalado en ~/.openclaw/skills/polyclaw (2026-03-24)
+- [x] uv instalado para ejecutar PolyClaw (2026-03-24)
+- [x] PolyClaw verificado funcionando — mostrando mercados reales de Polymarket en tiempo real (2026-03-24)
+- [x] Simmer SDK conectado y verificado — briefing devuelve mercados en tiempo real (2026-03-24)
+- [x] PRIMER TRADE DE PAPER TRADING EJECUTADO en venue=sim: 163.93 shares por 14.92 $SIM (2026-03-24)
 
 ### Próximo paso EXACTO
-SPRINT 1 — Tarea 1: Instalar simmer-sdk y ejecutar primer trade de prueba
-
-Primer paso exacto:
-SSH al servidor: `ssh openclaw-shell`
-pip install simmer-sdk en el servidor + verificar con python -c "import simmer"
-Crear .env en el servidor con todas las API keys.
-Ejecutar primer trade manual en Simmer venue=sim para verificar pipeline completo.
+Instalar Binance MCP server en Emma o iniciar desarrollo de bot.py con asyncio.
 
 ### Problemas conocidos abiertos
 - Ninguno
 
-### Goals de la próxima sesión
-- [ ] pip install simmer-sdk en el servidor + verificar con python -c "import simmer"
-- [ ] Crear .env en el servidor con todas las API keys
+### Pendiente Sprint 1
+- [ ] Instalar Binance MCP server en Emma
+- [ ] Escribir bot.py base con asyncio + señales Metaculus/Manifold
+- [ ] Configurar lógica de edge detection (edge ≥ 8%)
+- [ ] Conectar señales con Simmer para trades automáticos
 - [ ] USER.md con información de Andres
-- [ ] Primer trade de prueba en Simmer venue=sim para verificar pipeline completo
-- [ ] Configurar routing de modelos por tarea en el código del bot
-- [ ] Agregar créditos a OpenRouter (~$5) para modelos específicos
 
 ### Historial de sesiones
 | Sesión | Sprint | Fecha | Completado |
@@ -136,3 +141,4 @@ Ejecutar primer trade manual en Simmer venue=sim para verificar pipeline complet
 | 5 | Sprint 0 | 2026-03-23 | SSH exitoso, OpenClaw 2026.3.13 daemon systemd, Telegram @emma_openclawbot funcionando, OpenRouter configurado, stack AI actualizado |
 | 6 | Sprint 0 | 2026-03-23 | SOUL.md personalizado con identidad Emma, memoria persistente operativa, modelo ajustado a openrouter/auto |
 | 7 | Sprint 0 | 2026-03-24 | SSH alias ed25519, onboarding desactivado, memoria semántica Gemini activa, GEMINI_API_KEY inyectada |
+| 8 | Sprint 1 | 2026-03-24 | simmer-sdk, .env creado, Alchemy node, PolyClaw instalado y funcionando, Simmer API 502 |
