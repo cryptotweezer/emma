@@ -1,0 +1,41 @@
+# Variables de entorno — NUNCA subir al repo
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+env/
+
+# Logs
+*.log
+logs/
+dev_logs/*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Keys y credenciales
+*.pem
+*.key
+*.p12
+secrets/
+
+# Simmer / Trading
+*.db
+*.sqlite
