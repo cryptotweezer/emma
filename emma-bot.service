@@ -1,0 +1,19 @@
+[Unit]
+Description=Emma Trading Bot — Polymarket paper trading 24/7
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/emma
+EnvironmentFile=/root/.env
+ExecStart=/usr/bin/python3 /root/emma/bot.py
+Restart=always
+RestartSec=30
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=emma-bot
+
+[Install]
+WantedBy=multi-user.target

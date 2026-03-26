@@ -1,0 +1,3 @@
+simmer-sdk
+aiohttp
+python-dotenv
