@@ -7,12 +7,12 @@ Capital inicial: $1,000 USD. Objetivo: máxima rentabilidad.
 
 ## Stack técnico (decisiones fijas)
 - Lenguaje: Python 3.9+
-- Capa de ejecución: Simmer SDK (pip install simmer-sdk) — paper trading + producción
+- Capa de ejecución: Simmer SDK (módulo simmer_sdk, usar SimmerClient) — paper trading + producción
 - SDK control avanzado: py-clob-client (pip install py-clob-client)
 - Cadena: Polygon (chain ID 137) — colateral USDC
 - Wallet: EOA signature_type=0
 - Paper trading venue: Simmer $SIM (antes de capital real)
-- Primera señal: Metaculus API (metaculus.com/api/ — sin auth, gratis)
+- Primera señal: Metaculus API (metaculus.com/api2/questions/ — requiere API key en header Authorization, devuelve 7013 questions)
 - Segunda señal: Manifold Markets API (api.manifold.markets — 500 req/min, gratis)
 - Tercera señal: NOAA API (api.weather.gov — sin key, gratis, weather markets)
 - Smart money: HashDive (hashdive.com — partner oficial Polymarket)
@@ -31,7 +31,7 @@ Capital inicial: $1,000 USD. Objetivo: máxima rentabilidad.
 - PolyClaw: ~/.openclaw/skills/polyclaw (Chainstack, verificado)
 - Alchemy: Polygon mainnet node activo
 - Simmer SDK: instalado y primer trade ejecutado en venue=sim
-- .env servidor: 13 variables configuradas en /root/.env
+- .env servidor: 20 variables configuradas en /root/.env
 
 ## Decisiones de arquitectura (no cambiar sin documentar)
 - Fees: mercados política/eventos = CERO fees → estrategia Fase 1
@@ -43,6 +43,8 @@ Capital inicial: $1,000 USD. Objetivo: máxima rentabilidad.
 - OpenClaw: operador 24/7 en producción, no durante desarrollo
 
 ## Bugs críticos documentados (NO ignorar)
+- simmer-sdk: el módulo se importa como `simmer_sdk`, la clase es `SimmerClient`, el método `get_markets()` NO acepta argumento `venue`, y los objetos `Market` tienen atributos directos (no es un dict).
+- metaculus: el endpoint correcto es `/api2/questions/` (el antiguo `/api/questions/` da 404).
 - Polymarket/agents: divisor USDC usa 10e5 en vez de 1e6 → sizing 10x mal
 - Polymarket/agents: market order siempre compra token[1] = NO outcome
 - Polymarket/agents: recursión infinita en error handler → crash garantizado
@@ -110,22 +112,28 @@ Capital inicial: $1,000 USD. Objetivo: máxima rentabilidad.
 - [x] GEMINI_API_KEY agregada al openclaw.json env section (2026-03-24)
 - [x] Modelo OpenClaw: openrouter/auto (free tier) (2026-03-24)
 - [x] pip install simmer-sdk instalado en el servidor (2026-03-24)
-- [x] /root/.env creado con 13 variables (SIMMER, POLYMARKET, GROQ, OPENROUTER, NVIDIA, GEMINI, METACULUS, MANIFOLD, CONTABO, ALCHEMY_API_KEY, ALCHEMY_NODE, CHAINSTACK_NODE, POLYCLAW_PRIVATE_KEY) (2026-03-24)
+- [x] /root/.env creado con 20 variables (SIMMER, POLYMARKET, GROQ, OPENROUTER, NVIDIA, GEMINI, METACULUS, MANIFOLD, CONTABO, ALCHEMY_API_KEY, ALCHEMY_NODE, CHAINSTACK_NODE, POLYCLAW_PRIVATE_KEY) (2026-03-24)
 - [x] Alchemy cuenta creada — Polygon mainnet node activo (gratis, 30M CU/mes) (2026-03-24)
 - [x] PolyClaw de Chainstack instalado en ~/.openclaw/skills/polyclaw (2026-03-24)
 - [x] uv instalado para ejecutar PolyClaw (2026-03-24)
 - [x] PolyClaw verificado funcionando — mostrando mercados reales de Polymarket en tiempo real (2026-03-24)
 - [x] Simmer SDK conectado y verificado — briefing devuelve mercados en tiempo real (2026-03-24)
 - [x] PRIMER TRADE DE PAPER TRADING EJECUTADO en venue=sim: 163.93 shares por 14.92 $SIM (2026-03-24)
+- [x] Health check completo ejecutado — 7/7 componentes verificados (2026-03-26)
+- [x] Simmer SDK corregido: módulo `simmer_sdk`, clase `SimmerClient`, `get_markets()` sin argumento `venue`, objetos Market con atributos directos (2026-03-26)
+- [x] Metaculus API corregida: endpoint `/api2/questions/` + API key en header Authorization, devuelve 7013 questions (2026-03-26)
+- [x] Alchemy node verificado: block 84696663, Polygon mainnet activo (2026-03-26)
+- [x] PolyClaw verificado: mercados reales en tiempo real (US/Iran, Netanyahu, etc.) (2026-03-26)
+- [x] Manifold API verificada: funcionando sin auth (2026-03-26)
 
 ### Próximo paso EXACTO
-Instalar Binance MCP server en Emma o iniciar desarrollo de bot.py con asyncio.
+Escribir bot.py base con asyncio usando simmer_sdk.SimmerClient y Metaculus /api2/questions/
 
 ### Problemas conocidos abiertos
 - Ninguno
 
 ### Pendiente Sprint 1
-- [ ] Instalar Binance MCP server en Emma
+- [x] Health check implícito de APIs completado
 - [ ] Escribir bot.py base con asyncio + señales Metaculus/Manifold
 - [ ] Configurar lógica de edge detection (edge ≥ 8%)
 - [ ] Conectar señales con Simmer para trades automáticos
@@ -142,3 +150,4 @@ Instalar Binance MCP server en Emma o iniciar desarrollo de bot.py con asyncio.
 | 6 | Sprint 0 | 2026-03-23 | SOUL.md personalizado con identidad Emma, memoria persistente operativa, modelo ajustado a openrouter/auto |
 | 7 | Sprint 0 | 2026-03-24 | SSH alias ed25519, onboarding desactivado, memoria semántica Gemini activa, GEMINI_API_KEY inyectada |
 | 8 | Sprint 1 | 2026-03-24 | simmer-sdk, .env creado, Alchemy node, PolyClaw instalado y funcionando, Simmer API 502 |
+| 9 | Sprint 1 | 2026-03-26 | Health check completo: Simmer SDK corregido (SimmerClient, sin venue), Metaculus endpoint /api2/, todos los componentes verificados OK |

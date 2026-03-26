@@ -120,7 +120,7 @@ Esto es automatización de señales sin código
 ### Metaculus
 - **URL:** https://metaculus.com
 - **Tipo:** Plataforma de forecasting con probabilidades de referencia
-- **API:** Pública y bien documentada
+- **API:** Requiere API key en el header Authorization (403 sin auth desde VPS)
 - **Edge:** Sus probabilidades agregadas son más precisas que Polymarket en eventos de largo plazo
 - **Uso:** Comparar Metaculus prob vs Polymarket precio = señal directa
 
@@ -271,14 +271,14 @@ RAZÓN:      estamos en el lado equivocado de información privilegiada
 
 ### Metaculus API ⭐ FUENTE PRIMARIA
 
-**Base URL:** https://www.metaculus.com/api/
-**Auth:** No requerida para lectura
+**Base URL:** https://www.metaculus.com/api2/
+**Auth:** Requiere API key en header (403 sin auth desde VPS)
 **Docs:** metaculus.com/api/ (OpenAPI 3.0)
 **Framework oficial Python:** github.com/Metaculus/forecasting-tools
 
 Endpoints clave:
-- GET /api/questions/ — lista preguntas con filtros
-- GET /api/questions/{id}/ — pregunta específica con probabilidad actual
+- GET /api2/questions/ — lista preguntas con filtros
+- GET /api2/questions/{id}/ — pregunta específica con probabilidad actual
 - Parámetros: status (open/closed/resolved), search, ordering
 
 Datos que provee:
@@ -290,8 +290,9 @@ Datos que provee:
 Cómo usarlo como señal:
 ```python
 import requests
-# Sin auth — completamente público
-r = requests.get("https://www.metaculus.com/api/questions/",
+# Requiere auth header
+headers = {"Authorization": f"Token {METACULUS_API_KEY}"}
+r = requests.get("https://www.metaculus.com/api2/questions/", headers=headers,
     params={"status": "open", "search": "election"})
 for q in r.json()["results"]:
     prob = q["community_prediction"]["full"]["q2"]

@@ -27,7 +27,7 @@
 ## Arquitectura del sistema (lo que vamos a construir)
 
 ### Stack de ejecución (actualizado 2026-03-21)
-1. **Simmer SDK** — capa principal de ejecución y paper trading
+1. **Simmer SDK** — capa principal de ejecución y paper trading (usar `simmer_sdk.SimmerClient`)
    - pip install simmer-sdk
    - Paper trading nativo con $10K $SIM virtual
    - Safety rails automáticos ($100/trade, $500/día)
@@ -39,8 +39,8 @@
 3. **grimoire-polymarket skill** — para operaciones desde agentes Claude
 
 ### Stack de señales (nuevo — definido 2026-03-21)
-1. **Metaculus API** — probabilidad primaria (sin auth, gratis)
-   - URL: metaculus.com/api/
+1. **Metaculus API** — probabilidad primaria
+   - URL: metaculus.com/api2/questions/ (requiere API key en header)
    - Dato clave: community_prediction.full.q2
 2. **Manifold Markets API + MCP Server** — probabilidad secundaria (sin auth, gratis)
    - URL: api.manifold.markets — 500 req/min
@@ -188,7 +188,7 @@ Si eso ocurre: contactar soporte y pedir IP nueva — es raro pero documentado.
 - [x] Conectar OpenClaw con Telegram para recibir alertas — @emma_openclawbot
 - [x] Registrar agente en Simmer y guardar SIMMER_API_KEY — $10K SIM listo
 - [x] pip install simmer-sdk en el servidor
-- [x] Crear /root/.env en el servidor con 13 variables principales
+- [x] Crear /root/.env en el servidor con 20 variables principales
 - [x] Alchemy cuenta creada — Polygon mainnet node activo
 - [x] PolyClaw de Chainstack instalado y funcionando
 - [x] uv instalado para ejecutar PolyClaw
@@ -281,6 +281,28 @@ VM Contabo (OpenClaw corriendo 24/7)
    - Paper trading 24/7 en VM desde el día 1 del Sprint 1
    - Descartado: Hostinger (precio injustificado ~$23/mes, control limitado)
    - Descartado: Hetzner (menos specs por más precio que Contabo)
+
+---
+
+## Correcciones API descubiertas en Sesión 9 (2026-03-26)
+
+### Simmer SDK — API y patrón de uso correcto
+- **Módulo**: `import simmer_sdk` (NO `import simmer`)
+- **Clase**: `simmer_sdk.SimmerClient(api_key=os.getenv('SIMMER_API_KEY'))` (NO `simmer.Client()`)
+- **Uso de endpoints**: `client.get_markets(limit=3)` (El método NO acepta argumento `venue`)
+- **Objeto Market**: Los atributos de `Market` son directos y NO es un diccionario. Ejemplos de acceso:
+  - `market.question` (título)
+  - `market.current_probability`
+  - `market.external_price_yes`
+  - `market.polymarket_token_id`
+  - `market.id`
+  - `market.status`
+  - `market.resolves_at`
+  - `market.divergence`
+
+### Metaculus API — Endpoint correcto
+- **Endpoint válido**: `/api2/questions/` (el anterior `/api/questions/` retorna 404 Not Found)
+- **Autenticación requerida**: Utilizar header `Authorization: Token {METACULUS_API_KEY}`.
 
 ---
 
