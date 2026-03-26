@@ -1,9 +1,42 @@
 # Polymarket Trading Bot — Estado del Proyecto
 
 ## Qué es este proyecto
-Bot de trading automatizado para Polymarket con EV positivo sostenible.
-Estrategia híbrida en 2 fases: arbitrage de información → market making.
-Capital inicial: $1,000 USD. Objetivo: máxima rentabilidad.
+Emma OS — Sistema multi-agente comandado por Emma.
+Bot de trading en Polymarket es solo el primer módulo.
+Visión: Emma como comandante de múltiples agentes especializados, cada uno con memoria y workspace propio.
+
+Capital inicial trading: $1,000 USD (paper trading primero).
+Objetivo largo plazo: sistema autónomo de inteligencia operacional — trading, research, desarrollo y más.
+
+## Arquitectura Multi-Agente (visión Sprint 3+)
+
+### Agentes planificados
+
+| Agente | Rol | Estado |
+|--------|-----|--------|
+| Emma | Comandante — orquesta todos los agentes, punto de contacto principal via Telegram | ✅ Activa |
+| Tweezer | Trading specialist — ejecuta bot.py, analiza señales, reporta P&L | 🔨 Sprint 2 |
+| Dev | Developer — escribe código, debug, mejoras del sistema | 🔨 Sprint 3 |
+| Lucho | Research — mercados, noticias, señales externas, análisis | 🔨 Sprint 3 |
+
+### Principios de la arquitectura
+- Emma es el único punto de contacto con Andrés via Telegram
+- Cada agente tiene su propio SOUL.md, memoria semántica y workspace
+- Los agentes nunca mezclan información entre sí
+- Cada agente reporta resultados a Emma
+- Emma orquesta vía ACP (Agent Communication Protocol) de OpenClaw
+- Router automático: Emma detecta qué agente debe manejar cada tarea
+
+### Stack del dashboard (Sprint 3)
+- Supabase (free tier) — logs de actividad de agentes, Kanban
+- Dashboard web en /root/.openclaw/workspace/agent-dashboard/
+- Puerto 45680, acceso via SSH tunnel
+- Single HTML file con Tailwind CDN + Chart.js + Supabase JS SDK
+- Tablas Supabase: agent_logs, todos
+
+### Referencia de implementación
+Tutorial base: https://komputermechanic.com/tutorials/openclaw-dashboard
+Adaptar agentes del tutorial (Alex/Maya/Jordan/Dev/Sam) a los agentes del proyecto (Emma/Tweezer/Dev/Lucho).
 
 ## Stack técnico (decisiones fijas)
 - Lenguaje: Python 3.9+
@@ -55,6 +88,30 @@ Capital inicial: $1,000 USD. Objetivo: máxima rentabilidad.
 - poly-maker: estrategia obsoleta sin programa de rewards masivo
 - simmer_sdk.SimmerClient.trade(): argumento `side` acepta 'YES'/'NO', NO acepta 'buy'/'sell'. El argumento `action` es separado ('buy').
 - simmer_sdk.SimmerClient.execute_trade() es SÍNCRONO (no async) — no usar await al llamarlo desde bot.py.
+
+### Incidente de seguridad — sesión 10 (2026-03-26)
+Durante el health check, el dashboard de OpenClaw mostró el contenido completo del /root/.env en el chat. Todo el contenido del chat pasa por OpenRouter y los LLMs de terceros (Groq, NVIDIA). Las siguientes API keys deben considerarse comprometidas y deben rotarse:
+
+KEYS A ROTAR (pendiente — Andrés las rota manualmente):
+- GROQ_API_KEY — groq.com → API Keys → Regenerate
+- OPENROUTER_API_KEY — openrouter.ai → Settings → Keys
+- NVIDIA_API_KEY — build.nvidia.com → API Keys
+- GEMINI_API_KEY — aistudio.google.com → API Keys
+- METACULUS_API_KEY — metaculus.com → Profile → API
+- MANIFOLD_API_KEY — manifold.markets → Profile → API
+- ALCHEMY_API_KEY — alchemy.com → Apps → View Key → Regenerate
+- SIMMER_API_KEY — simmer.markets → Settings → Regenerate
+- CHAINSTACK_NODE — chainstack.com → Project → Regenerate
+
+WALLET A REGENERAR ANTES DE DINERO REAL:
+- POLYMARKET_PRIVATE_KEY — generar wallet nueva en MetaMask antes de cualquier operación con USDC real. La actual pasó por OpenRouter y debe considerarse comprometida.
+
+KEYS SEGURAS (no expuestas o ya rotadas):
+- CONTABO_ROOT_PASSWORD — no se mostró en el chat ✅
+- TELEGRAM_BOT_TOKEN — se compartió en chat privado con Claude claude.ai, no pasó por OpenRouter ✅
+
+REGLA PERMANENTE PARA EMMA:
+Emma tiene en su SOUL.md la regla de nunca mostrar keys completas en el chat. Siempre usar grep -q o --count.
 
 ## Arquitectura de señales (decisión fija)
 - Señal primaria: edge = promedio(Metaculus × 0.6, Manifold × 0.4) - Polymarket_precio
@@ -149,13 +206,12 @@ Capital inicial: $1,000 USD. Objetivo: máxima rentabilidad.
 - [x] git push completado — commit e920a0b, 20 archivos, +1119 líneas (2026-03-26)
 
 ### Próximo paso EXACTO
-DEPLOY AL SERVIDOR:
-1. ssh openclaw-shell
-2. cd /root && git clone https://github.com/cryptotweezer/emma.git emma
-3. Agregar al /root/.env: TELEGRAM_USER_ID, BOT_INTERVAL=300, BOT_MIN_EDGE=0.08, BOT_MAX_KELLY=0.15, BOT_MAX_DAILY_LOSS=0.05, BOT_MAX_DRAWDOWN=0.15, BOT_MAX_POSITIONS=5, DISCORD_WEBHOOK_URL=
-4. bash /root/emma/deploy.sh
-5. Verificar: journalctl -u emma-bot -f
-6. Confirmar mensaje de startup en Telegram @emma_openclawbot
+PRÓXIMOS PASOS (en orden de prioridad):
+1. Andrés rota todas las API keys comprometidas (ver sección seguridad)
+2. Completar USER.md de Emma con información de Andrés
+3. Verificar bot.py corriendo y acumulando trades reales
+4. Cuando haya 30+ trades → analizar resultados y planificar Sprint 3
+5. Sprint 3: crear agentes Tweezer, Dev, Lucho en OpenClaw
 
 ### Problemas conocidos abiertos
 - Ninguno
@@ -167,15 +223,30 @@ DEPLOY AL SERVIDOR:
 - [x] Conectar señales con Simmer para trades automáticos
 - [ ] USER.md con información de Andrés
 
-### Pendiente Sprint 2
-- [ ] Deploy al servidor: git clone + deploy.sh
-- [ ] Verificar primer ciclo completo en servidor con logs
-- [ ] Confirmar mensaje startup en Telegram
-- [ ] USER.md con información de Andrés
-- [ ] Discord server para Emma + implementar discord.py
-- [ ] Dashboard web command center (visualización P&L, trades, señales)
-- [ ] Emma responde preguntas de estado consultando emma.db
-- [ ] Ajuste de parámetros según primeros resultados de paper trading
+### Pendiente Sprint 2 — Setup inmediato
+- [ ] Andrés rota todas las API keys comprometidas (ver lista arriba)
+- [ ] Andrés genera wallet Polymarket nueva para Sprint de dinero real
+- [ ] Completar USER.md en workspace de Emma con info de Andrés: nombre, timezone (verificar), proyectos activos, cómo prefiere comunicarse, qué espera de Emma
+- [ ] Verificar bot.py corriendo: journalctl -u emma-bot -f
+- [ ] Confirmar fix sim_balance en executor.py también en repo local
+- [ ] Fix datetime.utcnow() DeprecationWarning → datetime.now(timezone.utc)
+- [ ] Verificar whitelist Telegram activo (test con cuenta diferente)
+- [ ] Acumular primeros 30 trades de paper trading con datos reales
+
+### Pendiente Sprint 3 — Multi-agente
+- [ ] Crear cuenta Supabase gratuita y configurar tablas agent_logs + todos
+- [ ] Crear agente Tweezer en OpenClaw con SOUL.md especializado en trading
+- [ ] Crear agente Dev en OpenClaw con SOUL.md especializado en código
+- [ ] Crear agente Lucho en OpenClaw con SOUL.md especializado en research
+- [ ] Configurar router en Emma para despacho automático de tareas
+- [ ] Discord server para Emma + canal por agente
+- [ ] Emma responde preguntas consultando emma.db en tiempo real
+
+### Pendiente Sprint 4 — Dashboard
+- [ ] Servidor dashboard en puerto 45680 (systemd service)
+- [ ] Dashboard HTML/JS con Supabase: Agent Monitor + Kanban
+- [ ] Emma orquesta pipeline completo: Lucho research → Tweezer señales
+- [ ] Análisis primer mes de paper trading — decidir si pasar a dinero real
 
 ### Historial de sesiones
 | Sesión | Sprint | Fecha | Completado |
@@ -190,3 +261,4 @@ DEPLOY AL SERVIDOR:
 | 8 | Sprint 1 | 2026-03-24 | simmer-sdk, .env creado, Alchemy node, PolyClaw instalado y funcionando, Simmer API 502 |
 | 9 | Sprint 1 | 2026-03-26 | Health check completo: Simmer SDK corregido (SimmerClient, sin venue), Metaculus endpoint /api2/, todos los componentes verificados OK |
 | 10 | Sprint 1 | 2026-03-26 | Sistema completo: bot.py, señales, edge, risk, SQLite, Telegram, deploy scripts — commit e920a0b, 20 archivos, +1119 líneas. Sprint 1 COMPLETADO. |
+| 11 | Sprint 2 | 2026-03-26 | Bot live con mensaje Telegram confirmado. Fix sim_balance aplicado. Whitelist Telegram configurado (dmPolicy=allowlist, allowFrom=[6509551753]). Incidente seguridad documentado — API keys a rotar. Visión multi-agente definida: Emma + Tweezer + Dev + Lucho. Arquitectura dashboard con Supabase planificada. |
