@@ -10,14 +10,59 @@ Objetivo largo plazo: sistema autónomo de inteligencia operacional — trading,
 
 ## Arquitectura Multi-Agente (visión Sprint 3+)
 
-### Agentes planificados
+### OpenClaw — Estado actual
+- Versión: 2026.3.24
+- Reinstalado limpio el 2026-03-27
+- Gateway corriendo en: http://127.0.0.1:18789
+- Token dashboard: 1903582673fa86f899b966d8962fbefbd5b19246e8d25386
+- Modelo: openai/gpt-4o-mini (OPENAI_API_KEY configurada en env)
+- Telegram: @Emma_Tweezer_Bot conectado con dmPolicy: allowlist, allowFrom: [6509551753]
+- Memoria semántica: agents.defaults.memorySearch = gemini / gemini-embedding-001
+- 17 variables de entorno cargadas desde /root/.env
 
-| Agente | Rol | Estado |
-|--------|-----|--------|
-| Emma | Comandante — orquesta todos los agentes, punto de contacto principal via Telegram | ✅ Activa |
-| Tweezer | Trading specialist — ejecuta bot.py, analiza señales, reporta P&L | 🔨 Sprint 2 |
-| Dev | Developer — escribe código, debug, mejoras del sistema | 🔨 Sprint 3 |
-| Lucho | Research — mercados, noticias, señales externas, análisis | 🔨 Sprint 3 |
+### Los 4 agentes están creados y completamente configurados
+
+| Agente | ID | Default | Emoji | Rol |
+|--------|----|---------|-------|-----|
+| Emma | emma | ✅ | 👑 | Comandante y orquestadora |
+| Tweezer | tweezer | ❌ | 📈 | Trading & Markets Specialist |
+| Dev | dev | ❌ | 💻 | Senior Software Developer |
+| Otto | otto | ❌ | 🔍 | Research & Intelligence |
+
+### Archivos configurados por agente
+Cada agente tiene en su workspace:
+- SOUL.md — system prompt completo y detallado
+- IDENTITY.md — nombre, emoji, personalidad
+- AGENTS.md — descripción del equipo y cómo colaborar
+- TOOLS.md — infraestructura y comandos específicos del agente
+- USER.md — perfil de Andrés personalizado por agente
+- HEARTBEAT.md — vacío (sin heartbeat por ahora)
+- BOOTSTRAP.md — vacío (onboarding completado)
+- MEMORY.md — vacío (Gemini lo llena automáticamente)
+
+### Supabase — Estado actual
+- Plan: Free tier
+- Proyecto: activo y healthy
+- Cliente Python instalado: supabase==2.28.3
+- Variables configuradas en /root/.env y openclaw.json:
+  - SUPABASE_URL
+  - SUPABASE_ANON_KEY
+
+### Tablas creadas
+
+| Tabla | Columnas | Propósito |
+|-------|----------|-----------|
+| agent_logs | 6 | Registra actividad de agentes — alimenta Agent Monitor |
+| todos | 9 | Kanban board de tareas |
+
+### Qué se loggea en agent_logs
+- bot.py → loggea automáticamente cada ciclo de trading (agent_name: Tweezer)
+- Emma, Tweezer, Dev, Otto → loggean cada tarea via Supabase Protocol en SOUL.md
+
+### Supabase Protocol (en SOUL.md de cada agente)
+Cada agente tiene al final de su SOUL.md una regla mandatoria que los obliga
+a ejecutar un python3 INSERT en agent_logs después de cada tarea completada,
+registrando: agent_name, task_description, model_used (dinámico), status.
 
 ### Principios de la arquitectura
 - Emma es el único punto de contacto con Andrés via Telegram
@@ -57,8 +102,12 @@ Adaptar agentes del tutorial (Alex/Maya/Jordan/Dev/Sam) a los agentes del proyec
 - OpenClaw: instalación manual vía Docker (~10 min con ayuda de Claude)
 - Paper trading: Simmer venue=sim 24/7 en VM (3 semanas mínimo)
 - Criterio para dinero real: win rate ≥ 55% sostenido con ≥ 30 trades
-- Acceso dashboard: ssh openclaw (tunnel) → http://127.0.0.1:18789/#token=a37fc88d89ea9e5eea21c561a14da0d97c0d7ac4ddf65f10
-- Acceso shell servidor: ssh openclaw-shell
+### SSH aliases (máquina local Windows, ~/.ssh/config)
+- ssh emma → tunnel SSH al puerto 18789 (dashboard OpenClaw)
+- ssh emma-shell → shell directo al servidor
+
+Nota: anteriormente eran ssh openclaw y ssh openclaw-shell.
+Actualizados en sesión 13.
 - Memoria semántica: Gemini text-embedding-001 (gratis, 1000 req/day)
 - Emma: @emma_openclawbot en Telegram
 - PolyClaw: ~/.openclaw/skills/polyclaw (Chainstack, verificado)
@@ -129,81 +178,37 @@ Emma tiene en su SOUL.md la regla de nunca mostrar keys completas en el chat. Si
 
 ---
 
+## bot.py
+
+### Cambios recientes en bot.py
+- Integrado supabase_logger: from storage.supabase_logger import log_agent_activity
+- Loggea en Supabase en dos puntos:
+  1. Línea 156: cuando ejecuta un trade exitoso
+  2. Línea 165: cuando completa un ciclo sin oportunidades
+- Fix aplicado: sim_balance en executor.py para leer balance correcto
+- DeprecationWarning pendiente: datetime.utcnow() → datetime.now(timezone.utc)
+
+### Nuevo archivo: storage/supabase_logger.py
+- Módulo de logging para Supabase
+- Función: log_agent_activity(agent_name, task_description, model_used, status)
+- Diseño fail-safe: nunca rompe el bot si Supabase falla
+- Compatible con ImportError si supabase no está instalado
+
+---
+
 ## ESTADO ACTUAL
 
 **Sprint:** 1 — Paper trading 24/7 en VM
 **Fecha última actualización:** 2026-03-26
 **Estado general:** SPRINT 1 COMPLETADO — Bot completo listo para deploy — 20 archivos Python, 1119 líneas — Pending: git pull en servidor + bash deploy.sh
 
-### Completado
-- [x] Estructura del proyecto creada (2026-03-20)
-- [x] Research completo: APIs, repos, fees, estrategia (2026-03-20)
-- [x] Bugs críticos documentados (2026-03-20)
-- [x] Estrategia definida: info arbitrage → market making (2026-03-20)
-- [x] Sistema de workflow configurado (2026-03-20)
-- [x] Custom skills corregidas a formato .claude/skills/ (2026-03-20)
-- [x] Simmer Markets investigado — seleccionado como capa de ejecución (2026-03-21)
-- [x] Ecosistema 170+ herramientas mapeado (2026-03-21)
-- [x] Stack de señales definido: Metaculus + Manifold + NOAA + HashDive (2026-03-21)
-- [x] Lógica del detector de mispricing definida — edge ≥ 8% (2026-03-21)
-- [x] Manifold MCP Server identificado — integración directa con Claude Code (2026-03-21)
-- [x] Infraestructura VM decidida: Contabo VPS10 $4.95/mes — 4 vCPU, 8 GB RAM (2026-03-22)
-- [x] Paper trading 24/7 en VM definido — Sprint 1 reescrito con criterios de graduación (2026-03-21)
-- [x] Infraestructura migrada a Contabo VPS10 — documentación completa en next-steps.md (2026-03-22)
-- [x] Servidor Contabo VPS10 activo — IP 85.239.236.154, Seattle US West, OpenClaw preinstalado (2026-03-22)
-- [x] Email Contabo recibido con credenciales confirmadas (2026-03-22)
-- [x] Todas las APIs conseguidas: Groq, Metaculus, Manifold, Simmer, OpenRouter, Inside Edge (2026-03-22)
-- [x] Simmer agente registrado, reclamado y con $10K SIM listos (2026-03-22)
-- [x] .env template completo creado con todas las variables necesarias (2026-03-22)
-- [x] .gitignore creado — .env y secrets protegidos del repo (2026-03-22)
-- [x] SSH al servidor Contabo VPS10 exitoso — root@85.239.236.154 (2026-03-23)
-- [x] OpenClaw 2026.3.13 instalado como daemon systemd 24/7 con lingering activado (2026-03-23)
-- [x] Bot Telegram @emma_openclawbot creado, emparejado y respondiendo (ID: 6509551753) (2026-03-23)
-- [x] Dashboard web accesible via tunnel SSH + token guardado (2026-03-23)
-- [x] Todas las API keys inyectadas en ~/.openclaw/openclaw.json sección "env": OPENROUTER, GROQ, NVIDIA, SIMMER, METACULUS, MANIFOLD (2026-03-23)
-- [x] Workspace files presentes: AGENTS.md, BOOTSTRAP.md, HEARTBEAT.md, IDENTITY.md, SOUL.md, TOOLS.md, USER.md (2026-03-23)
-- [x] Stack AI actualizado: Kimi K2.5 (NVIDIA) + Kimi K2 0905 (Groq) añadidos a ai-model-strategy.md (2026-03-23)
-- [x] SOUL.md personalizado — identidad Emma definida: directa, honesta, experta en trading/crypto/cybersecurity, autonomía calibrada por monto (2026-03-23)
-- [x] Emma actualizó su propio SOUL.md — memoria persistente del agente confirmada operativa (2026-03-23)
-- [x] Modelo ajustado a openrouter/auto (free tier) — acceso al mejor modelo disponible sin créditos
-- [x] SSH config con alias: ssh openclaw (tunnel automático) y ssh openclaw-shell (shell normal) (2026-03-24)
-- [x] Autenticación por clave ed25519 — sin contraseña (2026-03-24)
-- [x] Wizard de onboarding desactivado (touch /var/lib/openclaw/onboarded-root) (2026-03-24)
-- [x] SOUL.md personalizado para Emma — identidad completa en inglés (2026-03-24)
-- [x] Memoria semántica configurada: provider=gemini, model=gemini-embedding-001 (2026-03-24)
-- [x] Directorio ~/.openclaw/workspace/memory/ creado (2026-03-24)
-- [x] GEMINI_API_KEY agregada al openclaw.json env section (2026-03-24)
-- [x] Modelo OpenClaw: openrouter/auto (free tier) (2026-03-24)
-- [x] pip install simmer-sdk instalado en el servidor (2026-03-24)
-- [x] /root/.env creado con 20 variables (SIMMER, POLYMARKET, GROQ, OPENROUTER, NVIDIA, GEMINI, METACULUS, MANIFOLD, CONTABO, ALCHEMY_API_KEY, ALCHEMY_NODE, CHAINSTACK_NODE, POLYCLAW_PRIVATE_KEY) (2026-03-24)
-- [x] Alchemy cuenta creada — Polygon mainnet node activo (gratis, 30M CU/mes) (2026-03-24)
-- [x] PolyClaw de Chainstack instalado en ~/.openclaw/skills/polyclaw (2026-03-24)
-- [x] uv instalado para ejecutar PolyClaw (2026-03-24)
-- [x] PolyClaw verificado funcionando — mostrando mercados reales de Polymarket en tiempo real (2026-03-24)
-- [x] Simmer SDK conectado y verificado — briefing devuelve mercados en tiempo real (2026-03-24)
-- [x] PRIMER TRADE DE PAPER TRADING EJECUTADO en venue=sim: 163.93 shares por 14.92 $SIM (2026-03-24)
-- [x] Health check completo ejecutado — 7/7 componentes verificados (2026-03-26)
-- [x] Simmer SDK corregido: módulo `simmer_sdk`, clase `SimmerClient`, `get_markets()` sin argumento `venue`, objetos Market con atributos directos (2026-03-26)
-- [x] Metaculus API corregida: endpoint `/api2/questions/` + API key en header Authorization, devuelve 7013 questions (2026-03-26)
-- [x] Alchemy node verificado: block 84696663, Polygon mainnet activo (2026-03-26)
-- [x] PolyClaw verificado: mercados reales en tiempo real (US/Iran, Netanyahu, etc.) (2026-03-26)
-- [x] Manifold API verificada: funcionando sin auth (2026-03-26)
-- [x] bot.py creado — loop asyncio 24/7 con ciclo completo fetch→match→edge→trade→log (2026-03-26)
-- [x] signals/metaculus.py — fetch /api2/questions/ + fuzzy match con difflib (2026-03-26)
-- [x] signals/manifold.py — fetch /v0/markets + fuzzy match con difflib (2026-03-26)
-- [x] trading/edge.py — calculate_edge(), kelly_size(), determine_side() implementados (2026-03-26)
-- [x] trading/risk.py — RiskManager: stop-loss diario 5%, drawdown 15%, max 5 posiciones (2026-03-26)
-- [x] trading/executor.py — TradeExecutor con firmas reales verificadas de simmer_sdk.SimmerClient.trade() (2026-03-26)
-- [x] storage/db.py — SQLite con tablas: trades, daily_snapshots, signal_log (2026-03-26)
-- [x] notifications/telegram.py — notify_trade, notify_risk_limit, notify_daily_report, notify_startup (2026-03-26)
-- [x] notifications/discord.py — stub listo para Sprint 2 (2026-03-26)
-- [x] utils/logger.py — logging stdout + logs/bot.log rotación 7 días (2026-03-26)
-- [x] requirements.txt — simmer-sdk, aiohttp, python-dotenv (2026-03-26)
-- [x] emma-bot.service — systemd unit file para deploy 24/7 (2026-03-26)
-- [x] deploy.sh — script de deploy: pip install + systemd + restart (2026-03-26)
-- [x] Firmas reales de simmer_sdk verificadas en servidor: trade(), get_portfolio(), get_positions(), get_total_pnl(), get_held_markets() (2026-03-26)
-- [x] 10/10 archivos .py compilados sin errores de sintaxis (2026-03-26)
-- [x] git push completado — commit e920a0b, 20 archivos, +1119 líneas (2026-03-26)
+### Completado ✅
+- Bot de trading corriendo 24/7 como systemd service
+- OpenClaw reinstalado limpio con 4 agentes
+- Supabase configurado con tablas agent_logs y todos
+- Supabase logging integrado en bot.py y SOUL.md de agentes
+- Telegram @Emma_Tweezer_Bot conectado con whitelist
+- Memoria semántica Gemini configurada
 
 ### Próximo paso EXACTO
 PRÓXIMOS PASOS (en orden de prioridad):
@@ -262,3 +267,5 @@ PRÓXIMOS PASOS (en orden de prioridad):
 | 9 | Sprint 1 | 2026-03-26 | Health check completo: Simmer SDK corregido (SimmerClient, sin venue), Metaculus endpoint /api2/, todos los componentes verificados OK |
 | 10 | Sprint 1 | 2026-03-26 | Sistema completo: bot.py, señales, edge, risk, SQLite, Telegram, deploy scripts — commit e920a0b, 20 archivos, +1119 líneas. Sprint 1 COMPLETADO. |
 | 11 | Sprint 2 | 2026-03-26 | Bot live con mensaje Telegram confirmado. Fix sim_balance aplicado. Whitelist Telegram configurado (dmPolicy=allowlist, allowFrom=[6509551753]). Incidente seguridad documentado — API keys a rotar. Visión multi-agente definida: Emma + Tweezer + Dev + Lucho. Arquitectura dashboard con Supabase planificada. |
+| 12 | Sprint 2 | 2026-03-27 | OpenClaw reinstalado limpio. 4 agentes creados (Emma👑, Tweezer📈, Dev💻, Otto🔍). Todos los archivos de workspace configurados (SOUL, IDENTITY, AGENTS, TOOLS, USER, HEARTBEAT, BOOTSTRAP, MEMORY). Modelo cambiado a gpt-4o-mini. Telegram @Emma_Tweezer_Bot conectado con whitelist. SSH aliases actualizados a ssh emma y ssh emma-shell. Memoria semántica Gemini configurada. 17 env vars cargadas en OpenClaw. |
+| 13 | Sprint 2 | 2026-03-28 | Supabase configurado (free tier). Tablas agent_logs y todos creadas. supabase_logger.py creado y commiteado al repo. bot.py integrado con Supabase logging. Supabase Protocol agregado al SOUL.md de los 4 agentes. GitHub Personal Access Token configurado para push desde servidor. |
