@@ -25,6 +25,7 @@ from trading.risk import RiskManager
 from trading.executor import TradeExecutor
 import notifications.telegram
 import notifications.discord
+from storage.supabase_logger import log_agent_activity
 
 logger = get_logger()
 
@@ -152,6 +153,7 @@ async def run_cycle(
                 'skip_reason': None,
             })
             logger.info(f"TRADE OK: {side} ${amount:.2f} SIM")
+            log_agent_activity("Tweezer", f"Trade ejecutado: {side} {title} | Edge: {edge:.1%} | Amount: ${amount:.2f} SIM", "emma-bot", "completed")
             await notifications.telegram.notify_trade(result)
         else:
             logger.error(f"TRADE FAILED: {result.get('error')}")
@@ -161,6 +163,7 @@ async def run_cycle(
             f"Sin oportunidades este ciclo — "
             f"{len(simmer_markets)} mercados analizados"
         )
+    log_agent_activity("Tweezer", f"Ciclo completado — {len(simmer_markets)} mercados analizados", "emma-bot", "completed")
 
 
 async def daily_report_task(executor: TradeExecutor):
