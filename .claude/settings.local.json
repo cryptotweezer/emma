@@ -50,7 +50,13 @@
       "WebFetch(domain:polymarketguide.gitbook.io)",
       "WebFetch(domain:docs.anthropic.com)",
       "Bash(rm \"C:\\\\AI_Workspace\\\\polymarket\\\\.claude\\\\commands\\\\session-end.md\" \"C:\\\\AI_Workspace\\\\polymarket\\\\.claude\\\\commands\\\\session-start.md\")",
-      "Bash(rmdir \"C:\\\\AI_Workspace\\\\polymarket\\\\.claude\\\\commands\")"
+      "Bash(rmdir \"C:\\\\AI_Workspace\\\\polymarket\\\\.claude\\\\commands\")",
+      "Bash(python -m py_compile bot.py signals/metaculus.py signals/manifold.py trading/edge.py trading/risk.py storage/db.py utils/logger.py)",
+      "Bash(python -m py_compile trading/executor.py)",
+      "Bash(python -m py_compile trading/executor.py notifications/telegram.py notifications/discord.py bot.py)",
+      "Bash(python -m py_compile bot.py signals/metaculus.py signals/manifold.py trading/edge.py trading/risk.py trading/executor.py storage/db.py utils/logger.py notifications/telegram.py notifications/discord.py)",
+      "Bash(chmod +x deploy.sh)",
+      "Bash(grep -v '\\\\.pyc$')"
     ]
   }
 }

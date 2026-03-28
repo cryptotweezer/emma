@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CryptoTweezer Command Center</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-primary: #07080f;
+    --bg-secondary: #0d0f1a;
+    --bg-card: #111527;
+    --bg-card-hover: #161b30;
+    --accent-purple: #7c3aed;
+    --accent-blue: #2563eb;
+    --accent-cyan: #06b6d4;
+    --accent-green: #10b981;
+    --accent-red: #ef4444;
+    --accent-amber: #f59e0b;
+    --border: #1e2540;
+    --border-glow: rgba(124, 58, 237, 0.3);
+    --text-primary: #e2e8f0;
+    --text-secondary: #64748b;
+    --text-muted: #374151;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: 'Rajdhani', sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .mono { font-family: 'Space Mono', monospace; }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(124,58,237,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,58,237,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .content { position: relative; z-index: 1; }
+
+  .header {
+    background: rgba(13,15,26,0.95);
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo-text {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    background: linear-gradient(135deg, #7c3aed, #06b6d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+  .status-dot.active { background: var(--accent-green); }
+  .status-dot.inactive { background: var(--accent-red); }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  .nav-tab {
+    padding: 0.5rem 1.1rem;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.82rem;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text-secondary);
+    border: 1px solid transparent;
+    text-transform: uppercase;
+    background: none;
+  }
+  .nav-tab:hover { color: var(--text-primary); background: rgba(124,58,237,0.1); }
+  .nav-tab.active {
+    color: #a78bfa;
+    background: rgba(124,58,237,0.15);
+    border-color: rgba(124,58,237,0.4);
+  }
+
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    transition: all 0.2s;
+  }
+  .card:hover { border-color: var(--border-glow); }
+
+  .metric-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .metric-card.purple::before { background: linear-gradient(90deg, #7c3aed, transparent); }
+  .metric-card.blue::before { background: linear-gradient(90deg, #2563eb, transparent); }
+  .metric-card.green::before { background: linear-gradient(90deg, #10b981, transparent); }
+  .metric-card.red::before { background: linear-gradient(90deg, #ef4444, transparent); }
+  .metric-card.cyan::before { background: linear-gradient(90deg, #06b6d4, transparent); }
+  .metric-card.amber::before { background: linear-gradient(90deg, #f59e0b, transparent); }
+
+  .metric-value {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .metric-label {
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-top: 0.35rem;
+  }
+
+  .agent-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    transition: all 0.25s;
+  }
+  .agent-card:hover {
+    border-color: var(--border-glow);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+
+  .agent-avatar {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--border);
+  }
+
+  .agent-avatar-placeholder {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    border: 2px solid var(--border);
+  }
+
+  .model-select {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-primary);
+    padding: 0.35rem 0.65rem;
+    font-size: 0.72rem;
+    font-family: 'Space Mono', monospace;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+  .model-select:focus { border-color: var(--accent-purple); }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .badge-green { background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.3); }
+  .badge-red { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+  .badge-purple { background: rgba(124,58,237,0.15); color: #a78bfa; border: 1px solid rgba(124,58,237,0.3); }
+  .badge-blue { background: rgba(37,99,235,0.15); color: #60a5fa; border: 1px solid rgba(37,99,235,0.3); }
+  .badge-amber { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+  .badge-cyan { background: rgba(6,182,212,0.15); color: #22d3ee; border: 1px solid rgba(6,182,212,0.3); }
+
+  .kanban-col {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    min-height: 300px;
+    padding: 1rem;
+  }
+  .kanban-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    cursor: grab;
+    transition: all 0.2s;
+  }
+  .kanban-card:hover { border-color: rgba(124,58,237,0.4); transform: translateY(-1px); }
+  .kanban-card.dragging { opacity: 0.5; cursor: grabbing; }
+  .kanban-col.drag-over { border-color: var(--accent-purple); background: rgba(124,58,237,0.05); }
+
+  .data-table { width: 100%; border-collapse: collapse; }
+  .data-table th {
+    text-align: left;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border);
+  }
+  .data-table td {
+    padding: 0.65rem 0.75rem;
+    font-size: 0.78rem;
+    border-bottom: 1px solid rgba(30,37,64,0.5);
+    font-family: 'Space Mono', monospace;
+  }
+  .data-table tr:hover td { background: rgba(124,58,237,0.04); }
+
+  .cron-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.8rem;
+  }
+  .cron-row:last-child { border-bottom: none; }
+
+  .cmd-input {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    padding: 0.75rem 1rem;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.9rem;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .cmd-input:focus { border-color: var(--accent-purple); }
+  .cmd-input::placeholder { color: var(--text-secondary); }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #7c3aed, #2563eb);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.6rem 1.25rem;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+  .btn-primary:hover { opacity: 0.85; transform: translateY(-1px); }
+
+  .btn-secondary {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .btn-secondary:hover { border-color: var(--accent-purple); color: var(--text-primary); }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg-primary); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent-purple);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    display: inline-block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .fade-in { animation: fadeIn 0.3s ease-out; }
+
+  .section-title {
+    font-size: 0.68rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header content">
+  <div style="max-width:1400px;margin:0 auto;padding:0.7rem 1.5rem;display:flex;align-items:center;gap:1.5rem;">
+
+    <div style="display:flex;align-items:center;gap:0.6rem;min-width:190px;">
+      <img src="avatars/logo.png" onerror="this.style.display='none'" style="width:26px;height:26px;border-radius:6px;object-fit:cover;">
+      <span class="logo-text">CRYPTOTWEEZER<br>COMMAND CENTER</span>
+    </div>
+
+    <nav style="flex:1;display:flex;justify-content:center;gap:0.3rem;">
+      <button class="nav-tab active" onclick="showTab('overview',this)">🏠 Overview</button>
+      <button class="nav-tab" onclick="showTab('trading',this)">📈 Trading</button>
+      <button class="nav-tab" onclick="showTab('agents',this)">🤖 Agents</button>
+      <button class="nav-tab" onclick="showTab('tasks',this)">✅ Tasks</button>
+      <button class="nav-tab" onclick="showTab('cronjobs',this)">⚡ Cron Jobs</button>
+    </nav>
+
+    <div style="display:flex;align-items:center;gap:1rem;min-width:200px;justify-content:flex-end;">
+      <div style="display:flex;align-items:center;gap:0.4rem;font-size:0.7rem;">
+        <div class="status-dot" id="bot-status-dot"></div>
+        <span id="bot-status-text" style="color:var(--text-secondary);font-family:'Space Mono',monospace;font-size:0.68rem;">BOT</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:0.4rem;font-size:0.7rem;">
+        <div class="status-dot active"></div>
+        <span style="color:var(--text-secondary);font-family:'Space Mono',monospace;font-size:0.68rem;">EMMA OS</span>
+      </div>
+      <div style="color:var(--text-muted);font-family:'Space Mono',monospace;font-size:0.62rem;" id="current-time"></div>
+    </div>
+  </div>
+</header>
+
+<main class="content" style="max-width:1400px;margin:0 auto;padding:1.5rem;">
+
+  <!-- ═══ OVERVIEW ═══ -->
+  <div id="tab-overview" class="tab-content active fade-in">
+    <div class="section-title">System Overview</div>
+    <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:0.75rem;margin-bottom:1.25rem;">
+      <div class="metric-card purple"><div class="metric-value" id="ov-balance">—</div><div class="metric-label">Balance SIM</div></div>
+      <div class="metric-card green"><div class="metric-value" id="ov-trades">—</div><div class="metric-label">Total Trades</div></div>
+      <div class="metric-card blue"><div class="metric-value" id="ov-wins">—</div><div class="metric-label">Wins</div></div>
+      <div class="metric-card red"><div class="metric-value" id="ov-losses">—</div><div class="metric-label">Losses</div></div>
+      <div class="metric-card cyan"><div class="metric-value" id="ov-agent-logs">—</div><div class="metric-label">Agent Tasks</div></div>
+      <div class="metric-card amber"><div class="metric-value" id="ov-todos">—</div><div class="metric-label">Open Tasks</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+      <div class="card">
+        <div class="section-title">🤖 Trading Bot Status</div>
+        <div style="display:flex;flex-direction:column;gap:0.6rem;font-size:0.85rem;">
+          <div style="display:flex;justify-content:space-between;align-items:center;"><span style="color:var(--text-secondary);">Service</span><span id="ov-bot-service" class="badge badge-green">CHECKING...</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;"><span style="color:var(--text-secondary);">Strategy</span><span style="font-family:'Space Mono',monospace;font-size:0.7rem;">Meta×0.6 + Mani×0.4 vs Poly</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;"><span style="color:var(--text-secondary);">Min Edge</span><span class="badge badge-purple">≥ 8%</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;"><span style="color:var(--text-secondary);">Max Kelly</span><span class="badge badge-blue">15%</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;"><span style="color:var(--text-secondary);">Mode</span><span class="badge badge-amber">PAPER TRADING</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;"><span style="color:var(--text-secondary);">Cycle</span><span style="font-family:'Space Mono',monospace;font-size:0.7rem;">Every 300s</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-title">⚡ Recent Agent Activity</div>
+        <div id="ov-activity"><div style="display:flex;align-items:center;gap:0.5rem;color:var(--text-secondary);font-size:0.82rem;"><div class="spinner"></div> Loading...</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TRADING ═══ -->
+  <div id="tab-trading" class="tab-content fade-in">
+    <div class="section-title">Trading Bot — Performance Dashboard</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.75rem;margin-bottom:0.75rem;">
+      <div class="metric-card purple"><div class="metric-value" id="tr-balance">—</div><div class="metric-label">Balance (SIM)</div></div>
+      <div class="metric-card green"><div class="metric-value" id="tr-pnl">—</div><div class="metric-label">Total P&L</div></div>
+      <div class="metric-card blue"><div class="metric-value" id="tr-winrate">—</div><div class="metric-label">Win Rate</div></div>
+      <div class="metric-card amber"><div class="metric-value" id="tr-open">—</div><div class="metric-label">Open Positions</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.75rem;margin-bottom:1rem;">
+      <div class="metric-card green"><div class="metric-value" id="tr-wins">—</div><div class="metric-label">Wins</div></div>
+      <div class="metric-card red"><div class="metric-value" id="tr-losses">—</div><div class="metric-label">Losses</div></div>
+      <div class="metric-card cyan"><div class="metric-value" id="tr-total">—</div><div class="metric-label">Total Trades</div></div>
+      <div class="metric-card purple"><div class="metric-value" id="tr-opportunities">—</div><div class="metric-label">Cycles Run</div></div>
+    </div>
+    <div class="card" style="margin-bottom:1rem;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:0.5rem;"><div class="status-dot" id="tr-bot-dot"></div><span id="tr-bot-label" style="font-size:0.78rem;font-family:'Space Mono',monospace;">CHECKING...</span></div>
+      <div style="font-size:0.75rem;color:var(--text-secondary);">Venue: <span class="badge badge-amber">Simmer SDK — Paper Trading</span></div>
+      <div style="font-size:0.75rem;color:var(--text-secondary);">Kelly Max: <span style="color:var(--text-primary);">15%</span></div>
+      <div style="font-size:0.75rem;color:var(--text-secondary);">Min Edge: <span style="color:var(--text-primary);">8%</span></div>
+    </div>
+    <div class="card">
+      <div class="section-title">Recent Cycles & Trades</div>
+      <div style="overflow-x:auto;">
+        <table class="data-table">
+          <thead><tr><th>Time (AEST)</th><th>Agent</th><th>Activity</th><th>Model</th><th>Status</th></tr></thead>
+          <tbody id="tr-table"><tr><td colspan="5" style="text-align:center;color:var(--text-secondary);padding:2rem;"><div style="display:flex;align-items:center;justify-content:center;gap:0.5rem;"><div class="spinner"></div> Loading...</div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ AGENTS ═══ -->
+  <div id="tab-agents" class="tab-content fade-in">
+    <div class="section-title">Agent Team — Emma OS</div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;margin-bottom:1.5rem;">
+
+      <!-- Emma -->
+      <div class="agent-card">
+        <div style="display:flex;align-items:center;gap:0.85rem;margin-bottom:1rem;">
+          <img src="avatars/emma.png" class="agent-avatar" onerror="this.outerHTML='<div class=\'agent-avatar-placeholder\' style=\'background:rgba(124,58,237,0.15);border-color:rgba(124,58,237,0.4);\'>👑</div>'">
+          <div style="flex:1;">
+            <div style="display:flex;align-items:center;gap:0.5rem;"><span style="font-weight:700;font-size:1rem;">Emma</span><span class="badge badge-purple">Commander</span><div class="status-dot active" style="margin-left:auto;"></div></div>
+            <div style="font-size:0.73rem;color:var(--text-secondary);margin-top:0.2rem;">Chief of Staff & Orchestrator</div>
+          </div>
+        </div>
+        <div style="margin-bottom:0.75rem;">
+          <div style="font-size:0.67rem;color:var(--text-secondary);margin-bottom:0.3rem;text-transform:uppercase;letter-spacing:0.08em;">AI Model</div>
+          <select class="model-select" id="model-emma" onchange="setAgentModel('emma',this.value)">
+            <option value="openai/gpt-4o-mini">gpt-4o-mini · openai 💰</option>
+            <option value="nvidia/meta/llama-3.3-70b-instruct">meta/llama-3.3-70b · nvidia ✅ FREE</option>
+            <option value="groq/llama-3.3-70b-versatile">llama-3.3-70b · groq ✅ FREE</option>
+            <option value="groq/llama-3.1-8b-instant">llama-3.1-8b · groq ✅ FREE FAST</option>
+          </select>
+        </div>
+        <div style="font-size:0.67rem;color:var(--text-secondary);margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.08em;">Recent Activity</div>
+        <div id="activity-emma" style="font-size:0.78rem;color:var(--text-secondary);">Loading...</div>
+        <div class="divider"></div>
+        <div style="display:flex;gap:0.5rem;">
+          <input class="cmd-input" id="task-emma" placeholder="Send task to Emma..." style="font-size:0.8rem;padding:0.5rem 0.75rem;">
+          <button class="btn-secondary" onclick="sendTask('emma')">Send</button>
+        </div>
+      </div>
+
+      <!-- Tweezer -->
+      <div class="agent-card">
+        <div style="display:flex;align-items:center;gap:0.85rem;margin-bottom:1rem;">
+          <img src="avatars/tweezer.png" class="agent-avatar" onerror="this.outerHTML='<div class=\'agent-avatar-placeholder\' style=\'background:rgba(37,99,235,0.15);border-color:rgba(37,99,235,0.4);\'>📈</div>'">
+          <div style="flex:1;">
+            <div style="display:flex;align-items:center;gap:0.5rem;"><span style="font-weight:700;font-size:1rem;">Tweezer</span><span class="badge badge-blue">Trading</span><div class="status-dot active" style="margin-left:auto;"></div></div>
+            <div style="font-size:0.73rem;color:var(--text-secondary);margin-top:0.2rem;">Trading & Markets Specialist</div>
+          </div>
+        </div>
+        <div style="margin-bottom:0.75rem;">
+          <div style="font-size:0.67rem;color:var(--text-secondary);margin-bottom:0.3rem;text-transform:uppercase;letter-spacing:0.08em;">AI Model</div>
+          <select class="model-select" id="model-tweezer" onchange="setAgentModel('tweezer',this.value)">
+            <option value="nvidia/meta/llama-3.3-70b-instruct">meta/llama-3.3-70b · nvidia ✅ FREE</option>
+            <option value="openai/gpt-4o-mini">gpt-4o-mini · openai 💰</option>
+            <option value="groq/llama-3.3-70b-versatile">llama-3.3-70b · groq ✅ FREE</option>
+            <option value="groq/llama-3.1-8b-instant">llama-3.1-8b · groq ✅ FREE FAST</option>
+          </select>
+        </div>
+        <div style="font-size:0.67rem;color:var(--text-secondary);margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.08em;">Recent Activity</div>
+        <div id="activity-tweezer" style="font-size:0.78rem;color:var(--text-secondary);">Loading...</div>
+        <div class="divider"></div>
+        <div style="display:flex;gap:0.5rem;">
+          <input class="cmd-input" id="task-tweezer" placeholder="Send task to Tweezer..." style="font-size:0.8rem;padding:0.5rem 0.75rem;">
+          <button class="btn-secondary" onclick="sendTask('tweezer')">Send</button>
+        </div>
+      </div>
+
+      <!-- Dev -->
+      <div class="agent-card">
+        <div style="display:flex;align-items:center;gap:0.85rem;margin-bottom:1rem;">
+          <img src="avatars/dev.png" class="agent-avatar" onerror="this.outerHTML='<div class=\'agent-avatar-placeholder\' style=\'background:rgba(16,185,129,0.15);border-color:rgba(16,185,129,0.4);\'>💻</div>'">
+          <div style="flex:1;">
+            <div style="display:flex;align-items:center;gap:0.5rem;"><span style="font-weight:700;font-size:1rem;">Dev</span><span class="badge badge-green">Developer</span><div class="status-dot active" style="margin-left:auto;"></div></div>
+            <div style="font-size:0.73rem;color:var(--text-secondary);margin-top:0.2rem;">Senior Software Developer & Architect</div>
+          </div>
+        </div>
+        <div style="margin-bottom:0.75rem;">
+          <div style="font-size:0.67rem;color:var(--text-secondary);margin-bottom:0.3rem;text-transform:uppercase;letter-spacing:0.08em;">AI Model</div>
+          <select class="model-select" id="model-dev" onchange="setAgentModel('dev',this.value)">
+            <option value="openai/gpt-4o-mini">gpt-4o-mini · openai 💰</option>
+            <option value="nvidia/meta/llama-3.3-70b-instruct">meta/llama-3.3-70b · nvidia ✅ FREE</option>
+            <option value="groq/llama-3.3-70b-versatile">llama-3.3-70b · groq ✅ FREE</option>
+            <option value="groq/llama-3.1-8b-instant">llama-3.1-8b · groq ✅ FREE FAST</option>
+          </select>
+        </div>
+        <div style="font-size:0.67rem;color:var(--text-secondary);margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.08em;">Recent Activity</div>
+        <div id="activity-dev" style="font-size:0.78rem;color:var(--text-secondary);">Loading...</div>
+        <div class="divider"></div>
+        <div style="display:flex;gap:0.5rem;">
+          <input class="cmd-input" id="task-dev" placeholder="Send task to Dev..." style="font-size:0.8rem;padding:0.5rem 0.75rem;">
+          <button class="btn-secondary" onclick="sendTask('dev')">Send</button>
+        </div>
+      </div>
+
+      <!-- Otto -->
+      <div class="agent-card">
+        <div style="display:flex;align-items:center;gap:0.85rem;margin-bottom:1rem;">
+          <img src="avatars/otto.png" class="agent-avatar" onerror="this.outerHTML='<div class=\'agent-avatar-placeholder\' style=\'background:rgba(6,182,212,0.15);border-color:rgba(6,182,212,0.4);\'>🔍</div>'">
+          <div style="flex:1;">
+            <div style="display:flex;align-items:center;gap:0.5rem;"><span style="font-weight:700;font-size:1rem;">Otto</span><span class="badge badge-cyan">Research</span><div class="status-dot active" style="margin-left:auto;"></div></div>
+            <div style="font-size:0.73rem;color:var(--text-secondary);margin-top:0.2rem;">Research & Intelligence Specialist</div>
+          </div>
+        </div>
+        <div style="margin-bottom:0.75rem;">
+          <div style="font-size:0.67rem;color:var(--text-secondary);margin-bottom:0.3rem;text-transform:uppercase;letter-spacing:0.08em;">AI Model</div>
+          <select class="model-select" id="model-otto" onchange="setAgentModel('otto',this.value)">
+            <option value="nvidia/meta/llama-3.3-70b-instruct">meta/llama-3.3-70b · nvidia ✅ FREE</option>
+            <option value="openai/gpt-4o-mini">gpt-4o-mini · openai 💰</option>
+            <option value="groq/llama-3.3-70b-versatile">llama-3.3-70b · groq ✅ FREE</option>
+            <option value="groq/llama-3.1-8b-instant">llama-3.1-8b · groq ✅ FREE FAST</option>
+          </select>
+        </div>
+        <div style="font-size:0.67rem;color:var(--text-secondary);margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.08em;">Recent Activity</div>
+        <div id="activity-otto" style="font-size:0.78rem;color:var(--text-secondary);">Loading...</div>
+        <div class="divider"></div>
+        <div style="display:flex;gap:0.5rem;">
+          <input class="cmd-input" id="task-otto" placeholder="Send task to Otto..." style="font-size:0.8rem;padding:0.5rem 0.75rem;">
+          <button class="btn-secondary" onclick="sendTask('otto')">Send</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Activity Log — All Agents</div>
+      <div style="overflow-x:auto;">
+        <table class="data-table">
+          <thead><tr><th>Time (AEST)</th><th>Agent</th><th>Task</th><th>Model</th><th>Status</th></tr></thead>
+          <tbody id="agents-log-table"><tr><td colspan="5" style="text-align:center;color:var(--text-secondary);padding:2rem;"><div style="display:flex;align-items:center;justify-content:center;gap:0.5rem;"><div class="spinner"></div> Loading...</div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TASKS ═══ -->
+  <div id="tab-tasks" class="tab-content fade-in">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+      <div class="section-title" style="margin-bottom:0;">Kanban — Task Board</div>
+      <button class="btn-primary" onclick="toggleAddTask()">+ New Task</button>
+    </div>
+    <div id="add-task-form" class="card" style="display:none;margin-bottom:1rem;">
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;">
+        <div>
+          <div style="font-size:0.67rem;color:var(--text-secondary);margin-bottom:0.3rem;text-transform:uppercase;letter-spacing:0.08em;">Title *</div>
+          <input class="cmd-input" id="new-task-title" placeholder="Task description..." style="font-size:0.82rem;">
+        </div>
+        <div>
+          <div style="font-size:0.67rem;color:var(--text-secondary);margin-bottom:0.3rem;text-transform:uppercase;letter-spacing:0.08em;">Category</div>
+          <select class="model-select" id="new-task-category" style="padding:0.6rem 0.75rem;">
+            <option value="Work">Work</option>
+            <option value="Development">Development</option>
+            <option value="Marketing">Marketing</option>
+            <option value="Personal">Personal</option>
+          </select>
+        </div>
+        <div>
+          <div style="font-size:0.67rem;color:var(--text-secondary);margin-bottom:0.3rem;text-transform:uppercase;letter-spacing:0.08em;">Priority</div>
+          <select class="model-select" id="new-task-priority" style="padding:0.6rem 0.75rem;">
+            <option value="Normal">Normal</option>
+            <option value="Urgent">Urgent</option>
+            <option value="Someday">Someday</option>
+          </select>
+        </div>
+        <div>
+          <div style="font-size:0.67rem;color:var(--text-secondary);margin-bottom:0.3rem;text-transform:uppercase;letter-spacing:0.08em;">Assign To</div>
+          <select class="model-select" id="new-task-agent" style="padding:0.6rem 0.75rem;">
+            <option value="">No agent</option>
+            <option value="Emma">Emma</option>
+            <option value="Tweezer">Tweezer</option>
+            <option value="Dev">Dev</option>
+            <option value="Otto">Otto</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:0.5rem;">
+        <button class="btn-primary" onclick="addTask()">Create Task</button>
+        <button class="btn-secondary" onclick="toggleAddTask()">Cancel</button>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;">
+      <div>
+        <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.75rem;">
+          <div style="width:8px;height:8px;border-radius:50%;background:#3b82f6;"></div>
+          <span style="font-weight:700;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.08em;">To Do</span>
+          <span class="badge badge-blue" id="count-todo">0</span>
+        </div>
+        <div class="kanban-col" id="col-todo" ondrop="drop(event,'todo')" ondragover="allowDrop(event)"></div>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.75rem;">
+          <div style="width:8px;height:8px;border-radius:50%;background:#f59e0b;"></div>
+          <span style="font-weight:700;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.08em;">In Progress</span>
+          <span class="badge badge-amber" id="count-inprogress">0</span>
+        </div>
+        <div class="kanban-col" id="col-in_progress" ondrop="drop(event,'in_progress')" ondragover="allowDrop(event)"></div>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.75rem;">
+          <div style="width:8px;height:8px;border-radius:50%;background:#10b981;"></div>
+          <span style="font-weight:700;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.08em;">Done</span>
+          <span class="badge badge-green" id="count-done">0</span>
+        </div>
+        <div class="kanban-col" id="col-done" ondrop="drop(event,'done')" ondragover="allowDrop(event)"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ CRON JOBS ═══ -->
+  <div id="tab-cronjobs" class="tab-content fade-in">
+    <div class="section-title">Emma OS — Active Services & Cron Jobs</div>
+    <div class="card" style="margin-bottom:1rem;">
+      <div class="cron-row"><div class="status-dot active"></div><span style="font-family:'Space Mono',monospace;font-size:0.75rem;color:var(--accent-cyan);min-width:220px;">emma-bot.service</span><span class="badge badge-green">RUNNING</span><span style="color:var(--text-secondary);font-size:0.78rem;">Every 300s — Polymarket edge scanner</span></div>
+      <div class="cron-row"><div class="status-dot active"></div><span style="font-family:'Space Mono',monospace;font-size:0.75rem;color:var(--accent-cyan);min-width:220px;">openclaw-gateway.service</span><span class="badge badge-green">RUNNING</span><span style="color:var(--text-secondary);font-size:0.78rem;">Emma OS gateway — 24/7 auto-start</span></div>
+      <div class="cron-row"><div class="status-dot active"></div><span style="font-family:'Space Mono',monospace;font-size:0.75rem;color:var(--accent-cyan);min-width:220px;">agent-dashboard.service</span><span class="badge badge-green">RUNNING</span><span style="color:var(--text-secondary);font-size:0.78rem;">This dashboard — port 45680</span></div>
+    </div>
+    <div class="card">
+      <div class="section-title">Recent Bot Cycles (from Supabase)</div>
+      <div id="cron-bot-log"><div style="display:flex;align-items:center;gap:0.5rem;color:var(--text-secondary);font-size:0.82rem;"><div class="spinner"></div> Loading...</div></div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ═══════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════
+const SUPABASE_URL = 'https://ffswkovckcdahlqkihyd.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_0nFBED0sdR7e2Vm7eyIRpw_u_zWpTFu';
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const AGENT_COLORS = { Emma:'badge-purple', Tweezer:'badge-blue', Dev:'badge-green', Otto:'badge-cyan' };
+const fmt = (d) => new Date(d).toLocaleString('en-AU',{timeZone:'Australia/Sydney',hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'});
+
+// ═══════════════════════════════════════════════
+// CLOCK
+// ═══════════════════════════════════════════════
+function updateClock() {
+  const t = new Intl.DateTimeFormat('en-AU',{timeZone:'Australia/Sydney',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date());
+  document.getElementById('current-time').textContent = `AEST ${t}`;
+}
+setInterval(updateClock, 1000); updateClock();
+
+// ═══════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════
+function showTab(name, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (name === 'trading') loadTrading();
+  if (name === 'agents') loadAgents();
+  if (name === 'tasks') loadTasks();
+  if (name === 'cronjobs') loadCronJobs();
+}
+
+// ═══════════════════════════════════════════════
+// OVERVIEW
+// ═══════════════════════════════════════════════
+async function loadOverview() {
+  try {
+    const [{ data: logs }, { data: todos }] = await Promise.all([
+      db.from('agent_logs').select('*').order('created_at',{ascending:false}).limit(8),
+      db.from('todos').select('*').eq('status','todo')
+    ]);
+
+    const trades = (logs||[]).filter(r => r.task_description?.startsWith('Trade'));
+    const wins = trades.filter(t => t.status==='completed').length;
+    const losses = trades.filter(t => t.status==='failed').length;
+
+    document.getElementById('ov-balance').textContent = '$10,000';
+    document.getElementById('ov-trades').textContent = trades.length;
+    document.getElementById('ov-wins').textContent = wins;
+    document.getElementById('ov-losses').textContent = losses;
+    document.getElementById('ov-agent-logs').textContent = (logs||[]).length;
+    document.getElementById('ov-todos').textContent = (todos||[]).length;
+
+    const active = logs && logs.length > 0;
+    document.getElementById('bot-status-dot').className = 'status-dot ' + (active ? 'active' : 'inactive');
+    document.getElementById('bot-status-text').textContent = active ? 'BOT ON' : 'BOT OFF';
+    document.getElementById('ov-bot-service').textContent = active ? 'ACTIVE' : 'OFFLINE';
+    document.getElementById('ov-bot-service').className = 'badge ' + (active ? 'badge-green' : 'badge-red');
+
+    const actEl = document.getElementById('ov-activity');
+    if (logs && logs.length > 0) {
+      actEl.innerHTML = logs.map(d => `
+        <div style="display:flex;align-items:center;gap:0.5rem;padding:0.35rem 0;border-bottom:1px solid var(--border);font-size:0.77rem;">
+          <span class="badge ${AGENT_COLORS[d.agent_name]||'badge-purple'}" style="min-width:58px;justify-content:center;font-size:0.62rem;">${d.agent_name}</span>
+          <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${d.task_description||'—'}</span>
+          <span style="color:var(--text-muted);font-size:0.67rem;white-space:nowrap;">${fmt(d.created_at)}</span>
+        </div>`).join('');
+    } else {
+      actEl.innerHTML = '<span style="color:var(--text-muted);font-size:0.8rem;">No activity yet — bot scanning markets every 5 min</span>';
+    }
+  } catch(e) { console.error('Overview error:', e); }
+}
+
+// ═══════════════════════════════════════════════
+// TRADING
+// ═══════════════════════════════════════════════
+async function loadTrading() {
+  try {
+    const { data } = await db.from('agent_logs').select('*').order('created_at',{ascending:false}).limit(50);
+    const all = data || [];
+    const trades = all.filter(r => r.task_description?.startsWith('Trade'));
+    const cycles = all.filter(r => r.task_description?.startsWith('Ciclo'));
+    const wins = trades.filter(t => t.status==='completed').length;
+    const losses = trades.filter(t => t.status==='failed').length;
+    const wr = trades.length > 0 ? ((wins/trades.length)*100).toFixed(1)+'%' : 'N/A';
+
+    document.getElementById('tr-wins').textContent = wins;
+    document.getElementById('tr-losses').textContent = losses;
+    document.getElementById('tr-total').textContent = trades.length;
+    document.getElementById('tr-winrate').textContent = wr;
+    document.getElementById('tr-opportunities').textContent = cycles.length;
+    document.getElementById('tr-balance').textContent = '$10,000';
+    document.getElementById('tr-pnl').textContent = '$0.00';
+    document.getElementById('tr-open').textContent = '0';
+
+    const active = all.length > 0;
+    document.getElementById('tr-bot-dot').className = 'status-dot ' + (active ? 'active' : 'inactive');
+    document.getElementById('tr-bot-label').textContent = active ? 'BOT ACTIVE — SCANNING' : 'BOT OFFLINE';
+
+    const tbody = document.getElementById('tr-table');
+    if (all.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-secondary);padding:2rem;">No data yet — bot runs every 5 minutes</td></tr>`;
+    } else {
+      tbody.innerHTML = all.slice(0,20).map(d => `
+        <tr>
+          <td>${fmt(d.created_at)}</td>
+          <td><span class="badge ${AGENT_COLORS[d.agent_name]||'badge-purple'}">${d.agent_name||'—'}</span></td>
+          <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${d.task_description||'—'}</td>
+          <td style="font-size:0.68rem;">${d.model_used||'—'}</td>
+          <td><span class="badge ${d.status==='completed'?'badge-green':'badge-red'}">${d.status}</span></td>
+        </tr>`).join('');
+    }
+  } catch(e) { console.error('Trading error:', e); }
+}
+
+// ═══════════════════════════════════════════════
+// AGENTS
+// ═══════════════════════════════════════════════
+async function loadAgents() {
+  const agents = ['Emma','Tweezer','Dev','Otto'];
+  for (const agent of agents) {
+    try {
+      const { data } = await db.from('agent_logs').select('*').eq('agent_name',agent).order('created_at',{ascending:false}).limit(3);
+      const el = document.getElementById('activity-' + agent.toLowerCase());
+      if (!el) continue;
+      if (!data || data.length === 0) {
+        el.innerHTML = '<span style="color:var(--text-muted);">No activity yet</span>';
+      } else {
+        el.innerHTML = data.map(d => `
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.3rem;padding:0.3rem 0;border-bottom:1px solid var(--border);">
+            <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-primary);font-size:0.77rem;">${d.task_description||'—'}</span>
+            <span class="badge ${d.status==='completed'?'badge-green':'badge-red'}" style="margin-left:0.5rem;font-size:0.6rem;">${d.status}</span>
+          </div>`).join('');
+      }
+    } catch(e) { console.error(e); }
+  }
+  try {
+    const { data } = await db.from('agent_logs').select('*').order('created_at',{ascending:false}).limit(30);
+    const tbody = document.getElementById('agents-log-table');
+    if (!data || data.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-secondary);padding:2rem;">No agent activity logged yet</td></tr>`;
+    } else {
+      tbody.innerHTML = data.map(d => `
+        <tr>
+          <td>${fmt(d.created_at)}</td>
+          <td><span class="badge ${AGENT_COLORS[d.agent_name]||'badge-purple'}">${d.agent_name}</span></td>
+          <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${d.task_description||'—'}</td>
+          <td style="font-size:0.67rem;">${d.model_used||'—'}</td>
+          <td><span class="badge ${d.status==='completed'?'badge-green':'badge-red'}">${d.status}</span></td>
+        </tr>`).join('');
+    }
+  } catch(e) { console.error(e); }
+}
+
+// ═══════════════════════════════════════════════
+// TASKS
+// ═══════════════════════════════════════════════
+let tasks = [], draggedId = null;
+
+async function loadTasks() {
+  try {
+    const { data } = await db.from('todos').select('*').order('created_at',{ascending:false});
+    tasks = data || [];
+    renderKanban();
+  } catch(e) { console.error(e); }
+}
+
+function renderKanban() {
+  const cols = { todo:[], in_progress:[], done:[] };
+  tasks.forEach(t => { if (cols[t.status] !== undefined) cols[t.status].push(t); });
+  document.getElementById('count-todo').textContent = cols.todo.length;
+  document.getElementById('count-inprogress').textContent = cols.in_progress.length;
+  document.getElementById('count-done').textContent = cols.done.length;
+  const catC = {Work:'badge-purple',Development:'badge-green',Marketing:'badge-amber',Personal:'badge-cyan'};
+  const priC = {Urgent:'badge-red',Normal:'badge-blue',Someday:'badge-purple'};
+  Object.entries(cols).forEach(([status, items]) => {
+    const col = document.getElementById('col-' + status);
+    if (!col) return;
+    col.innerHTML = items.length === 0
+      ? `<div style="text-align:center;color:var(--text-muted);padding:2rem;font-size:0.8rem;">Empty</div>`
+      : items.map(t => `
+        <div class="kanban-card" draggable="true" ondragstart="drag(event,'${t.id}')" id="task-${t.id}">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.4rem;">
+            <span style="font-weight:600;font-size:0.83rem;flex:1;">${t.title}</span>
+            <button onclick="deleteTask('${t.id}')" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.75rem;padding:0 0 0 0.4rem;">✕</button>
+          </div>
+          <div style="display:flex;gap:0.3rem;flex-wrap:wrap;">
+            <span class="badge ${catC[t.category]||'badge-purple'}" style="font-size:0.6rem;">${t.category}</span>
+            <span class="badge ${priC[t.priority]||'badge-blue'}" style="font-size:0.6rem;">${t.priority}</span>
+          </div>
+        </div>`).join('');
+  });
+}
+
+function toggleAddTask() {
+  const f = document.getElementById('add-task-form');
+  f.style.display = f.style.display === 'none' ? 'block' : 'none';
+}
+
+async function addTask() {
+  const title = document.getElementById('new-task-title').value.trim();
+  if (!title) return alert('Title required');
+  const agent = document.getElementById('new-task-agent').value;
+  const finalTitle = agent ? `[${agent.toUpperCase()}] ${title}` : title;
+  try {
+    const { data } = await db.from('todos').insert({
+      title: finalTitle,
+      category: document.getElementById('new-task-category').value,
+      priority: document.getElementById('new-task-priority').value,
+      status: 'todo'
+    }).select();
+    if (data) { tasks.unshift(data[0]); renderKanban(); }
+    document.getElementById('new-task-title').value = '';
+    document.getElementById('add-task-form').style.display = 'none';
+    notify('Task created');
+  } catch(e) { console.error(e); }
+}
+
+async function deleteTask(id) {
+  if (!confirm('Delete this task?')) return;
+  await db.from('todos').delete().eq('id', id);
+  tasks = tasks.filter(t => t.id !== id);
+  renderKanban();
+}
+
+function drag(e, id) { draggedId = id; }
+function allowDrop(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+async function drop(e, status) {
+  e.preventDefault();
+  document.querySelectorAll('.kanban-col').forEach(c => c.classList.remove('drag-over'));
+  if (!draggedId) return;
+  await db.from('todos').update({ status }).eq('id', draggedId);
+  tasks = tasks.map(t => t.id === draggedId ? {...t, status} : t);
+  renderKanban();
+  draggedId = null;
+}
+
+// ═══════════════════════════════════════════════
+// CRON JOBS
+// ═══════════════════════════════════════════════
+async function loadCronJobs() {
+  try {
+    const { data } = await db.from('agent_logs').select('*').order('created_at',{ascending:false}).limit(15);
+    const el = document.getElementById('cron-bot-log');
+    if (!data || data.length === 0) {
+      el.innerHTML = '<span style="color:var(--text-muted);font-size:0.8rem;">No cycles logged yet</span>';
+    } else {
+      el.innerHTML = data.map(d => `
+        <div style="display:flex;gap:1rem;padding:0.4rem 0;border-bottom:1px solid var(--border);font-size:0.75rem;align-items:center;">
+          <span style="color:var(--text-secondary);min-width:130px;font-family:'Space Mono',monospace;font-size:0.68rem;">${fmt(d.created_at)}</span>
+          <span class="badge ${AGENT_COLORS[d.agent_name]||'badge-purple'}" style="font-size:0.62rem;">${d.agent_name}</span>
+          <span style="color:var(--text-primary);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${d.task_description||'—'}</span>
+          <span class="badge ${d.status==='completed'?'badge-green':'badge-red'}" style="font-size:0.62rem;">${d.status}</span>
+        </div>`).join('');
+    }
+  } catch(e) { console.error(e); }
+}
+
+// ═══════════════════════════════════════════════
+// AGENT MODEL
+// ═══════════════════════════════════════════════
+function setAgentModel(agent, model) {
+  localStorage.setItem('model-' + agent, model);
+  notify(`${agent} → ${model.split('/').pop()}`);
+}
+
+function loadModelPrefs() {
+  ['emma','tweezer','dev','otto'].forEach(a => {
+    const s = localStorage.getItem('model-' + a);
+    if (s) { const el = document.getElementById('model-' + a); if (el) el.value = s; }
+  });
+}
+
+// ═══════════════════════════════════════════════
+// SEND TASK
+// ═══════════════════════════════════════════════
+async function sendTask(agent) {
+  const input = document.getElementById('task-' + agent);
+  const task = input.value.trim();
+  if (!task) return;
+  try {
+    await db.from('todos').insert({
+      title: `[${agent.toUpperCase()}] ${task}`,
+      category: 'Work', priority: 'Normal', status: 'todo'
+    });
+    input.value = '';
+    notify(`Task sent to ${agent}`);
+  } catch(e) { console.error(e); }
+}
+
+// ═══════════════════════════════════════════════
+// NOTIFICATION
+// ═══════════════════════════════════════════════
+function notify(msg) {
+  const n = document.createElement('div');
+  n.style.cssText = 'position:fixed;bottom:1.5rem;right:1.5rem;background:rgba(124,58,237,0.92);color:white;padding:0.55rem 1rem;border-radius:8px;font-size:0.82rem;font-family:Rajdhani,sans-serif;z-index:9999;backdrop-filter:blur(8px);border:1px solid rgba(167,139,250,0.3);';
+  n.textContent = '✓ ' + msg;
+  document.body.appendChild(n);
+  setTimeout(() => n.remove(), 2500);
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+loadOverview();
+loadModelPrefs();
+setInterval(loadOverview, 30000);
+</script>
+</body>
+</html>
