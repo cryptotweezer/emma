@@ -5,7 +5,7 @@ Corre 24/7 como proceso independiente.
 import asyncio
 import os
 import signal
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import aiohttp
 from dotenv import load_dotenv
@@ -45,7 +45,7 @@ async def run_cycle(
     # 1. Estado actual
     balance = executor.get_balance()
     open_pos = executor.get_open_positions()
-    today = datetime.utcnow().strftime('%Y-%m-%d')
+    today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
     daily_stats = get_daily_stats(today)
     daily_pnl = daily_stats.get('daily_pnl', 0.0)
 
@@ -93,7 +93,7 @@ async def run_cycle(
         # Ambas fuentes requeridas
         if meta_prob is None or mani_prob is None:
             save_signal({
-                'timestamp': datetime.utcnow().isoformat(),
+                'timestamp': datetime.now(timezone.utc).isoformat(),
                 'market_id': market.id,
                 'question': title,
                 'metaculus_prob': meta_prob,
@@ -110,7 +110,7 @@ async def run_cycle(
 
         if edge < MIN_EDGE:
             save_signal({
-                'timestamp': datetime.utcnow().isoformat(),
+                'timestamp': datetime.now(timezone.utc).isoformat(),
                 'market_id': market.id,
                 'question': title[:80],
                 'metaculus_prob': meta_prob,
@@ -169,14 +169,14 @@ async def run_cycle(
 async def daily_report_task(executor: TradeExecutor):
     """Corre en loop paralelo, envía reporte a las 08:00 UTC."""
     while True:
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         target = now.replace(hour=8, minute=0, second=0, microsecond=0)
         if now >= target:
             target = target + timedelta(days=1)
         wait_seconds = (target - now).total_seconds()
         await asyncio.sleep(wait_seconds)
 
-        today = datetime.utcnow().strftime('%Y-%m-%d')
+        today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
         daily_stats = get_daily_stats(today)
         stats = {
             **daily_stats,
