@@ -29,6 +29,51 @@ ACCESO AL DASHBOARD:
 - URL OpenClaw: http://localhost:18789
 - Token OpenClaw: 1903582673fa86f899b966d8962fbefbd5b19246e8d25386
 
+### Discord — Estado actual ✅
+
+Servidor: "Tweezer OS" (Server ID: 1487312134810505266)
+Bot: @emma_bot (App ID: 1487313727379472445)
+Token: DISCORD_BOT_TOKEN en /root/.env
+
+Canales configurados con binding por agente:
+- #emma (1487312621505089636) → agente emma
+- #tweezer (1487312804326412484) → agente tweezer
+- #dev (1487312850434130042) → agente dev
+- #otto (1487312893924868270) → agente otto
+- #trading-bot (1487312959490359347) → agente emma
+
+DMs directos al bot: funcionan con dmPolicy allowlist
+Usuario autorizado: 809340597642854421 (Andrés)
+
+Configuración en openclaw.json:
+- channels.discord.enabled: true
+- channels.discord.token: valor directo (no env reference)
+- channels.discord.groupPolicy: allowlist
+- channels.discord.guilds: servidor con requireMention: false
+- bindings: 5 bindings por canal → agente
+
+IMPORTANTE — Lección aprendida:
+Si los canales de Discord muestran "typing" pero no responden,
+el problema son sesiones corruptas con deliveryContext incorrecto.
+Solución: limpiar todas las sesiones de todos los agentes:
+for agent in emma tweezer dev otto; do
+  echo '{}' > ~/.openclaw/agents/$agent/sessions/sessions.json
+done
+systemctl restart openclaw-gateway
+
+### SSH — Timeout configurado
+Agregado a /etc/ssh/sshd_config:
+- ClientAliveInterval 60
+- ClientAliveCountMax 120
+La conexión SSH ya no se corta por inactividad (hasta 2 horas).
+
+### Contabo — Auto Backup
+- Status: Enabled ✅
+- Backups disponibles: 6
+- Último backup: Mar 28, 2026
+- Próximo backup: Mar 29, 2026 4:00 PM UTC+11 (diario automático)
+- Costo: €0.83/mes — ya pagado
+
 ## Bot de trading — estado actual
 
 ARCHIVOS:
@@ -172,22 +217,20 @@ De pago (OpenAI):
 - Telegram @Emma_Tweezer_Bot con whitelist (solo Andrés)
 - Trading_Bot separado de Tweezer en Supabase logs
 - Fix datetime.utcnow() → datetime.now(timezone.utc)
-
-### PENDIENTE Sprint 3
-- [ ] Discord server — canal por agente, webhooks
-- [ ] Integrar OpenAI usage API para ver costos en dashboard
-- [ ] Limpieza automática de agent_logs > 90 días (cron job)
-- [ ] Conectar modelo switch del dashboard con openclaw.json real
-- [ ] Google Workspace para Emma (Gmail, Drive, Calendar)
-- [ ] Moltbook y Twitter para Emma (fase futura)
-- [ ] Analizar primeros 30 trades paper trading → decisión dinero real
-- [ ] Wallet Polymarket nueva antes de dinero real (actual comprometida)
-- [ ] Rotar POLYCLAW_PRIVATE_KEY en Chainstack
+- Discord server "Tweezer OS" con 5 canales — cada canal con su agente
+- DMs de Discord funcionando
+- SSH timeout configurado (ClientAliveInterval 60)
+- Contabo Auto Backup verificado (6 backups, diario automático)
 
 ### PENDIENTE Sprint 4
-- [ ] Evaluar resultados paper trading → decisión dinero real
-- [ ] Conectar wallet real a Polymarket mainnet
-- [ ] Activar Auto Backup en Contabo
+- [ ] Integrar OpenAI usage API para ver costos en dashboard
+- [ ] Limpieza automática agent_logs > 90 días (cron job)
+- [ ] Conectar modelo switch del dashboard con openclaw.json real
+- [ ] Google Workspace para Emma (Gmail, Drive, Calendar)
+- [ ] Moltbook y Twitter para Emma
+- [ ] Analizar primeros 30 trades paper trading → decisión dinero real
+- [ ] Wallet Polymarket nueva antes de dinero real
+- [ ] Fix datetime.utcnow() en señales de bot (metaculus.py, manifold.py)
 
 ## Variables de entorno (/root/.env)
 
@@ -222,6 +265,7 @@ dinero real — generar wallet nueva antes del Sprint de dinero real.
 | 12 | Sprint 2 | 2026-03-27 | OpenClaw reinstalado limpio. 4 agentes creados (Emma👑, Tweezer📈, Dev💻, Otto🔍). Todos los archivos de workspace configurados (SOUL, IDENTITY, AGENTS, TOOLS, USER, HEARTBEAT, BOOTSTRAP, MEMORY). Modelo cambiado a gpt-4o-mini. Telegram @Emma_Tweezer_Bot conectado con whitelist. SSH aliases actualizados a ssh emma y ssh emma-shell. Memoria semántica Gemini configurada. 17 env vars cargadas en OpenClaw. |
 | 13 | Sprint 2 | 2026-03-28 | Supabase configurado (free tier). Tablas agent_logs y todos creadas. supabase_logger.py creado y commiteado al repo. bot.py integrado con Supabase logging. Supabase Protocol agregado al SOUL.md de los 4 agentes. GitHub Personal Access Token configurado para push desde servidor. |
 | 14 | Sprint 2-3 | 2026-03-28 | Dashboard web completado: CryptoTweezer Command Center con 5 tabs (Overview, Trading, Agents, Tasks, Cron Jobs). Kanban board conectado a Supabase. Switch de modelo por agente. Avatares de los 4 agentes. Trading_Bot separado de Tweezer en Supabase. 3 servicios systemd habilitados. Fix datetime.utcnow(). |
+| 15 | Sprint 3 | 2026-03-29 | Discord completamente configurado y funcionando. 5 canales del servidor Tweezer OS con binding correcto por agente (Emma, Tweezer, Dev, Otto). DMs con @emma_bot funcionando. Diagnóstico y solución del bug de sesiones corruptas con deliveryContext incorrecto. SSH timeout configurado. Contabo Auto Backup verificado (6 backups, diario). |
 
 ## Próximo paso EXACTO
 
